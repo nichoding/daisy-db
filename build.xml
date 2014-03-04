@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="daisy-framework" default="main" basedir=".">
+	<property name="output.name" value="daisy-db.jar" />
+	<property name="server.dir" value="${basedir}/" />
+	<property name="dist.dir"  value="${server.dir}/dist"/>
+	<property name="src.dir" value="${server.dir}/src" />
+	<property name="lib.dir" value="${server.dir}/lib" />
+	<property name="classes.dir" value="${server.dir}/build" />
+	
+	<path id="classpath">
+		<fileset dir="${lib.dir}" includes="**/*.jar" />
+	</path>
+
+	<target name="main" depends="compile,package,clean" />
+
+	<target name="prepare">
+		<mkdir dir="${classes.dir}" />
+		<mkdir dir="${dist.dir}" />
+	</target>
+
+	<target name="run-depend" if="src.depend">
+		<depend cache="${classes.dir}" srcdir="${src.dir}" destdir="${classes.dir}" />
+	</target>
+
+	<target name="compile" depends="prepare,run-depend" description="compile">
+		<javac encoding="utf-8" includeantruntime="on" source="1.6" debug="true" destdir="${classes.dir}" srcdir="${src.dir}" classpathref="classpath" />
+	</target>
+	
+	<target name="package" description="Creates release jar file">
+		<mkdir dir="${dist.dir}"/>
+		<copy todir="${dist.dir}/lib" filtering="off">
+			<flattenmapper />
+			<fileset dir="${lib.dir}" includes="**/*.jar" />
+		</copy>
+		
+		<delete file="MANIFEST.MF"/>
+		
+		<tstamp>
+			<format property="buildTime" pattern="yyyy-MM-dd HH:mm:ss"/>
+		</tstamp>
+		
+		<manifest file="MANIFEST.MF"> 
+			<attribute name="Built-By" value="${user.name}" />
+			<attribute name="Built-Date" value="${buildTime}" />
+		</manifest>
+		
+		<jar destfile="${dist.dir}/${output.name}" basedir="${classes.dir}" manifest="MANIFEST.MF"/>
+		<delete file="MANIFEST.MF"/>
+	</target>
+	
+	<target name="clean">
+		<echo message="removing classes folder" />
+		<delete quiet="true" dir="${classes.dir}" />
+	</target>
+</project>
