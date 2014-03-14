@@ -69,8 +69,9 @@ public class ClazzDesc {
 		} else {
 			allFields = selfFields;
 		}
-		fields = new FieldDesc[allFields.length];
-		for (int i = 0; i < allFields.length; i++) {
+		int fieldsLength = allFields.length;
+		fields = new FieldDesc[fieldsLength];
+		for (int i = 0; i < fieldsLength; i++) {
 			Field f = allFields[i];
 			f.setAccessible(true);
 			Column column = f.getAnnotation(Column.class);

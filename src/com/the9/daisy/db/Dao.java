@@ -25,27 +25,45 @@ public class Dao {
 	private JDBCTemplate jdbc;
 	private static final Map<Class<?>, ClazzDesc> classDescMap = new HashMap<Class<?>, ClazzDesc>();
 
-	public void init(DbConfig config) {
+	public Dao(DbConfig config) {
 		ComboPooledDataSource dataSource = new ComboPooledDataSource();
 		dataSource.setJdbcUrl(config.getUrl());
-		dataSource.setUser(config.getUserName());
+		dataSource.setUser(config.getUser());
 		dataSource.setPassword(config.getPassword());
 		try {
 			dataSource.setDriverClass(config.getDriverClass());
 		} catch (PropertyVetoException e) {
-			throw new ServiceException("com.mysql.jdbc.Driver not found");
+			throw new ServiceException(MessageFormat.format("{0} not found",
+					config.getDriverClass()));
 		}
-		dataSource.setInitialPoolSize(config.getInitialPoolSize());
-		dataSource.setMaxPoolSize(config.getMaxPoolSize());
-		dataSource.setMinPoolSize(config.getMinPoolSize());
-		dataSource.setAcquireIncrement(config.getAcquireIncrement());
-		dataSource.setMaxIdleTime(config.getMaxIdleTime());
-		dataSource.setMaxStatements(config.getMaxStatements());
-		dataSource.setMaxStatementsPerConnection(config
-				.getMaxStatementsPerConnection());
-		dataSource.setPreferredTestQuery(config.getPreferredTestQuery());
+		logger.info("Dao init url={},user={},driverClass={}", new Object[] {
+				config.getUrl(), config.getUser(), config.getDriverClass() });
+		if (config.getInitialPoolSize() != 0) {
+			dataSource.setInitialPoolSize(config.getInitialPoolSize());
+		}
+		if (config.getMaxPoolSize() != 0) {
+			dataSource.setMaxPoolSize(config.getMaxPoolSize());
+		}
+		if (config.getMinPoolSize() != 0) {
+			dataSource.setMinPoolSize(config.getMinPoolSize());
+		}
+		if (config.getAcquireIncrement() != 0) {
+			dataSource.setAcquireIncrement(config.getAcquireIncrement());
+		}
+		if (config.getMaxIdleTime() != 0) {
+			dataSource.setMaxIdleTime(config.getMaxIdleTime());
+		}
+		if (config.getMaxStatements() != 0) {
+			dataSource.setMaxStatements(config.getMaxStatements());
+		}
+		if (config.getMaxStatementsPerConnection() != 0) {
+			dataSource.setMaxStatementsPerConnection(config
+					.getMaxStatementsPerConnection());
+		}
+		if (config.getPreferredTestQuery() != null) {
+			dataSource.setPreferredTestQuery(config.getPreferredTestQuery());
+		}
 		jdbc = new JDBCTemplate(dataSource);
-		logger.info("init Dao finish");
 	}
 
 	private ClazzDesc getClassDesc(Class<?> clazz) {
@@ -105,7 +123,7 @@ public class Dao {
 	}
 
 	/**
-	 * 连同id一并插入
+	 * 连同id一并插入一条记录
 	 * 
 	 * @param obj
 	 */
@@ -114,7 +132,7 @@ public class Dao {
 	}
 
 	/**
-	 * 插入并自动生成一个id
+	 * 插入一条记录并由数据库自动生成一个id
 	 * 
 	 * @param obj
 	 */
@@ -176,7 +194,7 @@ public class Dao {
 	}
 
 	/**
-	 * 更新一个对象
+	 * 更新一个对象（需要有id）
 	 * 
 	 * @param obj
 	 */
@@ -200,7 +218,7 @@ public class Dao {
 	}
 
 	/**
-	 * 根据id，设置一些字段值
+	 * 根据id，更新指定的某些字段值
 	 * 
 	 * @param sets
 	 * @param clazz
@@ -236,7 +254,7 @@ public class Dao {
 	}
 
 	/**
-	 * 根据条件，设置一些字段值
+	 * 根据条件，更新指定的某些字段值
 	 * 
 	 * @param sets
 	 * @param clazz
@@ -271,7 +289,7 @@ public class Dao {
 	}
 
 	/**
-	 * 根据id查找对象
+	 * 根据id查找整条记录
 	 * 
 	 * @param clazz
 	 * @param id
@@ -308,7 +326,7 @@ public class Dao {
 	}
 
 	/**
-	 * 根据id选择一些字段
+	 * 根据id查找制定的某些字段
 	 * 
 	 * @param clazz
 	 * @param columns
@@ -348,7 +366,7 @@ public class Dao {
 	}
 
 	/**
-	 * 根据条件查找对象的某些属性
+	 * 根据条件查找制定的某些属性
 	 * 
 	 * @param columns
 	 * @param clazz
@@ -379,4 +397,67 @@ public class Dao {
 		return null;
 	}
 
+	/**
+	 * 根据条件查找所有记录
+	 * 
+	 * @param clazz
+	 * @param where
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> List<T> select(Class<T> clazz, String where) {
+		final ClazzDesc cd = getClassDesc(clazz);
+		String sql = MessageFormat.format(cd.getSql_select__by__(), "*", where);
+		Object ret = jdbc.query(sql, new IHandler() {
+			@Override
+			public Object hanlder(ResultSet rs) throws SQLException {
+				Object obj = null;
+				try {
+					obj = handleResultSet(rs, cd);
+				} catch (Exception e) {
+					throw new ServiceException(e);
+				}
+				return obj;
+			}
+		});
+		if (null != ret) {
+			return (List<T>) ret;
+		}
+		return null;
+	}
+
+	/**
+	 * 查找所有记录
+	 * 
+	 * @param clazz
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> List<T> select(Class<T> clazz) {
+		final ClazzDesc cd = getClassDesc(clazz);
+		String sql = MessageFormat.format(cd.getSql_select__by__(), "*", "1=1");
+		Object ret = jdbc.query(sql, new IHandler() {
+			@Override
+			public Object hanlder(ResultSet rs) throws SQLException {
+				Object obj = null;
+				try {
+					obj = handleResultSet(rs, cd);
+				} catch (Exception e) {
+					throw new ServiceException(e);
+				}
+				return obj;
+			}
+		});
+		if (null != ret) {
+			return (List<T>) ret;
+		}
+		return null;
+	}
+
+	public void destroy() {
+		ComboPooledDataSource dataSource = (ComboPooledDataSource) jdbc
+				.getDataSource();
+		dataSource.close();
+		logger.info("close dataSource successfully");
+	}
 }

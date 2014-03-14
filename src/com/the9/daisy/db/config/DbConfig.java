@@ -2,8 +2,7 @@ package com.the9.daisy.db.config;
 
 public class DbConfig {
 	private String url;
-	private int port;
-	private String userName;
+	private String user;
 	private String password;
 	private String driverClass;
 	private int initialPoolSize;
@@ -23,20 +22,12 @@ public class DbConfig {
 		this.url = url;
 	}
 
-	public int getPort() {
-		return port;
+	public String getUser() {
+		return user;
 	}
 
-	public void setPort(int port) {
-		this.port = port;
-	}
-
-	public String getUserName() {
-		return userName;
-	}
-
-	public void setUserName(String userName) {
-		this.userName = userName;
+	public void setUser(String user) {
+		this.user = user;
 	}
 
 	public String getPassword() {
